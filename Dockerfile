@@ -6,12 +6,11 @@ WORKDIR /usr/src/app
 # Copy only package files first for better caching
 COPY package.json ./
 
-# Install dependencies using a safer approach
-# This skips the package-lock.json validation that's causing issues
-RUN npm install --production --no-package-lock
+# Install all dependencies including server ones
+RUN npm install --no-package-lock
 
-# Install dev dependencies for build step
-RUN npm install react-scripts --no-package-lock
+# Make sure all server dependencies are installed explicitly
+RUN npm install --no-package-lock cors express mongoose morgan jsonwebtoken stripe
 
 # Copy app source
 COPY . .

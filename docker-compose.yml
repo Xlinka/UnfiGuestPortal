@@ -14,16 +14,16 @@ services:
       - NODE_ENV=production
       - PORT=3881
       - MONGODB_URI=mongodb://unifi-guest-panel-mongo:27017/unifi-guest-portal
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-defaultsecretkey123456789}
       - JWT_EXPIRES_IN=24h
-      - UNIFI_CONTROLLER_URL=${UNIFI_CONTROLLER_URL}
-      - UNIFI_CONTROLLER_PORT=${UNIFI_CONTROLLER_PORT}
-      - UNIFI_USERNAME=${UNIFI_USERNAME}
-      - UNIFI_PASSWORD=${UNIFI_PASSWORD}
-      - UNIFI_SITE=${UNIFI_SITE}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - UNIFI_CONTROLLER_URL=${UNIFI_CONTROLLER_URL:-https://unifi.local}
+      - UNIFI_CONTROLLER_PORT=${UNIFI_CONTROLLER_PORT:-8443}
+      - UNIFI_USERNAME=${UNIFI_USERNAME:-admin}
+      - UNIFI_PASSWORD=${UNIFI_PASSWORD:-password}
+      - UNIFI_SITE=${UNIFI_SITE:-default}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_default}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-pk_test_default}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_default}
     volumes:
       - ./logs:/usr/src/app/logs
     networks:
@@ -41,17 +41,15 @@ services:
     networks:
       - unifi-guest-panel-network
 
-  # Nginx for SSL termination and reverse proxy (optional)
+  # Nginx for reverse proxy (HTTP only for development)
   unifi-guest-panel-nginx:
     image: nginx:alpine
     container_name: unifi-guest-panel-nginx
     restart: unless-stopped
     ports:
       - "3883:80"
-      - "3443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./nginx/ssl:/etc/nginx/ssl
       - ./nginx/logs:/var/log/nginx
     depends_on:
       - unifi-guest-panel-app
