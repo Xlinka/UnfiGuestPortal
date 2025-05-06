@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # Application frontend and backend
+  unifi-guest-panel-app:
+    build: .
+    container_name: unifi-guest-panel-app
+    restart: unless-stopped
+    ports:
+      - "3881:3881"
+    depends_on:
+      - unifi-guest-panel-mongo
+    environment:
+      - NODE_ENV=production
+      - PORT=3881
+      - MONGODB_URI=mongodb://unifi-guest-panel-mongo:27017/unifi-guest-portal
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=24h
+      - UNIFI_CONTROLLER_URL=${UNIFI_CONTROLLER_URL}
+      - UNIFI_CONTROLLER_PORT=${UNIFI_CONTROLLER_PORT}
+      - UNIFI_USERNAME=${UNIFI_USERNAME}
+      - UNIFI_PASSWORD=${UNIFI_PASSWORD}
+      - UNIFI_SITE=${UNIFI_SITE}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+    volumes:
+      - ./logs:/usr/src/app/logs
+    networks:
+      - unifi-guest-panel-network
+
+  # MongoDB database
+  unifi-guest-panel-mongo:
+    image: mongo:latest
+    container_name: unifi-guest-panel-mongo
+    restart: unless-stopped
+    volumes:
+      - unifi-guest-panel-mongodb-data:/data/db
+    ports:
+      - "27118:27017"
+    networks:
+      - unifi-guest-panel-network
+
+  # Nginx for SSL termination and reverse proxy (optional)
+  unifi-guest-panel-nginx:
+    image: nginx:alpine
+    container_name: unifi-guest-panel-nginx
+    restart: unless-stopped
+    ports:
+      - "3883:80"
+      - "3443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - unifi-guest-panel-app
+    networks:
+      - unifi-guest-panel-network
+
+# Persistent volumes
+volumes:
+  unifi-guest-panel-mongodb-data:
+    driver: local
+
+# Network for isolation
+networks:
+  unifi-guest-panel-network:
+    driver: bridge
