@@ -11,7 +11,7 @@ services:
     depends_on:
       - unifi-guest-panel-mongo
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3881
       - MONGODB_URI=mongodb://unifi-guest-panel-mongo:27017/unifi-guest-portal
       - JWT_SECRET=${JWT_SECRET:-defaultsecretkey123456789}
@@ -24,6 +24,8 @@ services:
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_default}
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-pk_test_default}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_default}
+      - REACT_APP_API_URL=http://localhost:3881/api
+      - REACT_APP_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-pk_test_default}
     volumes:
       - ./logs:/usr/src/app/logs
     networks:

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        button {
+            padding: 8px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>UniFi Guest Portal API Connection Test</h1>
+    
+    <div>
+        <button id="testDirect">Test Direct Connection</button>
+        <button id="testProxy">Test NGINX Proxy Connection</button>
+        <button id="checkStatus">Check Setup Status</button>
+        <button id="testCORS">Test CORS</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        const resultsContainer = document.getElementById('results');
+        
+        function addResult(message, isSuccess, data) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${isSuccess ? 'success' : 'error'}`;
+            
+            let content = `<strong>${message}</strong>`;
+            
+            if (data) {
+                content += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            
+            resultDiv.innerHTML = content;
+            resultsContainer.prepend(resultDiv);
+        }
+        
+        async function makeRequest(url, method = 'GET') {
+            try {
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                return { success: true, data, status: response.status };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // Test direct connection to the backend
+        document.getElementById('testDirect').addEventListener('click', async () => {
+            const result = await makeRequest('http://localhost:3881/api/setup/status');
+            
+            if (result.success) {
+                addResult('✅ Direct connection successful', true, result.data);
+            } else {
+                addResult('❌ Direct connection failed', false, { error: result.error });
+            }
+        });
+        
+        // Test connection through NGINX proxy
+        document.getElementById('testProxy').addEventListener('click', async () => {
+            const result = await makeRequest('http://localhost:3883/api/setup/status');
+            
+            if (result.success) {
+                addResult('✅ NGINX proxy connection successful', true, result.data);
+            } else {
+                addResult('❌ NGINX proxy connection failed', false, { error: result.error });
+            }
+        });
+        
+        // Check setup status
+        document.getElementById('checkStatus').addEventListener('click', async () => {
+            const urls = [
+                'http://localhost:3881/api/setup/status',
+                'http://localhost:3883/api/setup/status',
+                '/api/setup/status' // Relative URL
+            ];
+            
+            for (const url of urls) {
+                const result = await makeRequest(url);
+                
+                if (result.success) {
+                    addResult(`✅ Setup status check successful (${url})`, true, result.data);
+                } else {
+                    addResult(`❌ Setup status check failed (${url})`, false, { error: result.error });
+                }
+            }
+        });
+        
+        // Test CORS
+        document.getElementById('testCORS').addEventListener('click', async () => {
+            const origins = [
+                'http://localhost:3880',
+                'http://localhost:3881',
+                'http://localhost:3883'
+            ];
+            
+            for (const origin of origins) {
+                try {
+                    const response = await fetch('http://localhost:3881/api/setup/status', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Origin': origin
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    const corsHeader = response.headers.get('Access-Control-Allow-Origin');
+                    
+                    addResult(
+                        `✅ CORS test successful for origin ${origin}`,
+                        true,
+                        { 
+                            data,
+                            corsHeader,
+                            status: response.status
+                        }
+                    );
+                } catch (error) {
+                    addResult(
+                        `❌ CORS test failed for origin ${origin}`,
+                        false,
+                        { error: error.message }
+                    );
+                }
+            }
+        });
+    </script>
+</body>
+</html>
